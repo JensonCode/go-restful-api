@@ -6,35 +6,28 @@ import (
 	"os"
 
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/joho/godotenv"
 )
 
-func Init() {
-    // Load connection string from .env file
-    err := godotenv.Load()
+var DB *sql.DB;
+
+func ConnectPlanetScale() (*sql.DB) {
+
+    db, err := sql.Open("mysql", os.Getenv("LOCAL_DEV_DSN"))
+    
     if err != nil {
-        log.Fatal("failed to load env", err)
+        log.Fatalf("failed to load %v", err)
+        return nil
     }
-
-    // Open a connection to PlanetScale
-    db, err := sql.Open("mysql", os.Getenv("DSN"))
-    if err != nil {
-        log.Fatalf("failed to connect: %v", err)
+    
+    err = db.Ping();
+    if err != nil{
+        log.Fatalf("failed to ping: %v", err)
+        return nil
     }
+    
+    DB = db
 
-    rows, err := db.Query("SHOW TABLES")
-    if err != nil {
-        log.Fatalf("failed to query: %v", err)
-    }
-    defer rows.Close()
+    log.Println("Connected to PlanetScale!")
 
-    var tableName string
-    for rows.Next() {
-        if err := rows.Scan(&tableName); err != nil {
-            log.Fatalf("failed to scan row: %v", err)
-        }
-        log.Println(tableName)
-    }
-
-    defer db.Close()
+    return db
 }
